@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#f97316">
+    <title>Ghar ka Khana</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet.js for Free Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <style>
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --primary-light: #ffedd5;
+            --bg-cream: #f9f9f9;
+            --white: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --border: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --radius: 16px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-cream); color: var(--text-main); overflow-x: hidden; }
+        .hidden { display: none !important; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .section-title { font-size: 1.25rem; margin-bottom: 16px; font-weight: 700; color: var(--text-main); }
+        .loading { text-align: center; padding: 40px; color: var(--text-muted); font-weight: 500; }
+        .text-blue { color: #3b82f6; }
+
+        .app-container { max-width: 480px; margin: 0 auto; background: var(--bg-cream); min-height: 100vh; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        #main-app { padding-bottom: 80px; flex-grow: 1; display: flex; flex-direction: column; }
+        .page { padding: 16px 20px; animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); flex-grow: 1; }
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .auth-header { text-align: center; padding: 50px 20px 20px; }
+        .auth-logo-container { height: 90px; width: 90px; border-radius: 50%; margin: 0 auto 16px; background: var(--primary); color: var(--white); font-size: 2.8rem; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md); }
+        .header-logo-icon { font-size: 1.5rem; color: var(--primary); background: var(--primary-light); padding: 6px; border-radius: 8px; }
+        .auth-header h1 { font-size: 1.8rem; margin: 12px 0 4px; font-weight: 700; }
+        
+        .auth-form { padding: 0 20px; }
+
+        header { background: var(--white); padding: 16px 20px; position: sticky; top: 0; z-index: 100; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow-sm); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2rem; color: var(--text-main); }
+        .profile-pic { width: 36px; height: 36px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; color: var(--primary-dark); font-weight: 700; font-size: 1.1rem; cursor: pointer; }
+        .location-bar { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); padding: 10px 12px; background: var(--bg-cream); border-radius: 10px; cursor: pointer; transition: var(--transition); }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border-radius: 12px; border: none; font-weight: 600; font-size: 1rem; cursor: pointer; transition: var(--transition); width: 100%; }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--primary); color: var(--white); box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-danger { background: var(--danger); color: var(--white); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+        .btn:disabled { cursor: not-allowed; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 0.95rem; transition: var(--transition); background: var(--white); }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        .form-card { background: var(--white); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+        
+        .file-upload-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+        .file-upload-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; }
+        .file-upload-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-light); color: var(--primary-dark); padding: 14px; border-radius: 12px; font-weight: 600; width: 100%; transition: var(--transition); }
+        .img-preview { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-top: 12px; display: none; border: 1px solid var(--border); }
+
+        .food-grid { display: flex; flex-direction: column; gap: 16px; }
+        .food-card { background: var(--white); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-md); transition: var(--transition); }
+        .food-img { width: 100%; height: 180px; object-fit: cover; }
+        .food-content { padding: 16px; }
+        .food-title { font-weight: 700; font-size: 1.15rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; color: var(--text-main); }
+        .food-price { font-weight: 700; color: var(--primary); font-size: 1.15rem; }
+        .food-desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+
+        .qty-control { display: flex; align-items: center; background: var(--primary-light); border-radius: 12px; overflow: hidden; width: max-content; }
+        .qty-btn { background: transparent; border: none; color: var(--primary-dark); font-weight: bold; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; }
+        .qty-val { font-weight: 600; width: 32px; text-align: center; font-size: 1rem; color: var(--primary-dark); }
+
+        .kitchen-banner-container { position: relative; margin: -16px -20px 0; }
+        .kitchen-banner { width: 100%; height: 240px; object-fit: cover; }
+        .back-btn-overlay { position: absolute; top: 20px; left: 20px; background: var(--white); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-md); cursor: pointer; z-index: 10; font-size: 1.2rem; }
+        .kitchen-profile-card { background: var(--white); margin: -40px 0 24px; padding: 24px; border-radius: 24px; box-shadow: var(--shadow-md); position: relative; z-index: 5; }
+        .kp-title { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .kp-owner { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 12px; font-weight: 500; }
+        .kp-desc { font-size: 0.95rem; color: var(--text-main); line-height: 1.6; margin-bottom: 16px; }
+        .kp-info-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; }
+        .kp-pill { background: var(--bg-cream); padding: 8px 14px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; }
+
+        .order-card { background: var(--white); padding: 18px; border-radius: 16px; margin-bottom: 16px; box-shadow: var(--shadow-md); border-left: 5px solid var(--border); }
+        .order-card.status-Pending { border-left-color: #f59e0b; }
+        .order-card.status-Accepted { border-left-color: #8b5cf6; }
+        .order-card.status-Preparing { border-left-color: var(--primary); }
+        .order-card.status-OutForDelivery { border-left-color: #3b82f6; }
+        .order-card.status-Delivered { border-left-color: var(--success); }
+        .order-card.status-Cancelled, .order-card.status-Rejected { border-left-color: var(--danger); }
+        
+        .badge { display: inline-block; padding: 6px 14px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; color: white; }
+        .badge.Pending { background: #f59e0b; }
+        .badge.Accepted { background: #8b5cf6; }
+        .badge.Preparing { background: var(--primary); }
+        .badge.OutForDelivery { background: #3b82f6; }
+        .badge.Delivered { background: var(--success); }
+        .badge.Cancelled, .badge.Rejected { background: var(--danger); }
+
+        .floating-cart { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 440px; background: var(--success); color: white; padding: 16px 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3); cursor: pointer; z-index: 99; }
+        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--white); display: flex; justify-content: space-around; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 10px rgba(0,0,0,0.05); z-index: 100; border-top-left-radius: 24px; border-top-right-radius: 24px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); cursor: pointer; font-size: 0.75rem; font-weight: 600; width: 33%; transition: var(--transition); }
+        .nav-item i { font-size: 1.4rem; transition: var(--transition); }
+        .nav-item.active { color: var(--primary); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; opacity: 1; transition: opacity 0.3s ease; }
+        .modal-overlay.hidden { opacity: 0; pointer-events: none; display: flex !important; z-index: -1; }
+        .modal-content { background: var(--white); width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; max-height: 85vh; overflow-y: auto; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { font-size: 1.4rem; font-weight: 700; }
+        .modal-close { font-size: 1.5rem; color: var(--text-muted); cursor: pointer; }
+        
+        .profile-header { text-align: center; margin-bottom: 30px; }
+        .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--primary-light); color: var(--primary-dark); font-size: 2.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-weight: 700; box-shadow: var(--shadow-sm); }
+        .list-group { background: var(--white); border-radius: 16px; overflow: hidden; margin-bottom: 24px; box-shadow: var(--shadow-sm); }
+        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); font-size: 1rem; font-weight: 500; cursor: pointer; }
+        .list-icon { width: 28px; color: var(--primary); font-size: 1.1rem; }
+        .list-arrow { color: var(--text-muted); }
+        
+        .timer-text { font-family: monospace; font-size: 1.1rem; font-weight: bold; color: var(--danger); }
+        .star-rating { display: flex; justify-content: center; gap: 8px; margin: 20px 0; font-size: 2.5rem; color: var(--border); cursor: pointer; }
+        .star-rating i.active { color: #f59e0b; }
+        
+        /* Language Toggle & Policy Styling */
+        .lang-toggle { display: flex; gap: 8px; background: var(--bg-cream); padding: 4px; border-radius: 50px; width: max-content; margin: 0 auto 24px; border: 1px solid var(--border); }
+        .lang-btn { padding: 10px 24px; border-radius: 50px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: var(--transition); background: transparent; color: var(--text-muted); }
+        .lang-btn.active { background: var(--primary); color: var(--white); box-shadow: var(--shadow-sm); }
+        
+        .policy-text { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px; }
+        .policy-section { margin-bottom: 16px; text-align: left; }
+        .policy-section h3 { font-size: 1.05rem; color: var(--text-main); margin-bottom: 6px; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Auth View -->
+    <main id="view-auth" class="page">
+        <div class="auth-header">
+            <div class="auth-logo-container">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+            <h1>Ghar ka Khana</h1>
+            <p style="color: var(--text-muted); font-weight: 500;">Fresh homemade meals, delivered.</p>
+        </div>
+        
+        <div id="auth-main-section">
+            <div class="auth-form">
+                <div class="form-group" id="fg-email">
+                    <label>Email Address</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com">
+                </div>
+                
+                <div class="form-group" id="fg-password">
+                    <label>Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••">
+                    <div id="forgot-password-link" style="text-align: right; margin-top: 8px;">
+                        <span onclick="triggerPasswordReset()" style="font-size: 0.85rem; color: var(--primary); font-weight: 600; cursor: pointer; transition: opacity 0.2s;">Forgot Password?</span>
+                    </div>
+                </div>
+                
+                <div id="register-fields" class="hidden" style="animation: fadeSlideUp 0.3s ease;">
+                    <div class="form-group">
+                        <label>Join as a:</label>
+                        <select id="auth-role" onchange="toggleRoleFields()">
+                            <option value="customer">Customer (Order Food)</option>
+                            <option value="partner">Kitchen Partner (Sell Food)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label id="lbl-auth-name">Full Name</label>
+                        <input type="text" id="auth-name" placeholder="Your Name">
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <textarea id="auth-reg-address" rows="2" placeholder="House/Flat No, Area, Landmark..."></textarea>
+                    </div>
+                    <div class="form-group hidden" id="fg-kitchen-name">
+                        <label>Kitchen Name</label>
+                        <input type="text" id="auth-kitchen-name" placeholder="e.g. Sharma Ji Ki Rasoi">
+                    </div>
+                </div>
+        
+                <!-- Clean Error/Message Box -->
+                <div id="auth-error" class="hidden" style="color: var(--danger); background: #fef2f2; border: 1px solid #fca5a5; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; text-align: center; margin-bottom: 16px; font-weight: 500;"></div>
+        
+                <button class="btn btn-primary" id="btn-auth-action" onclick="executeAuth()">Log In</button>
+        
+                <!-- Modern Toggle Text -->
+                <div id="auth-toggle-container" style="text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">
+                    Don't have an account? <span onclick="setAuthMode('register')" style="color: var(--primary); font-weight: 700; cursor: pointer;">Create Account</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main App Wrapper -->
+    <div id="main-app" class="hidden">
+        <header id="main-header">
+            <div class="header-top">
+                <div class="logo">
+                    <i class="fa-solid fa-fire-burner header-logo-icon"></i> 
+                    <div style="display: flex; flex-direction: column;">
+                        <span>Ghar ka Khana</span>
+                        <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; line-height: 1; margin-top: 2px;">A Sakhiv Khivarsara product</span>
+                    </div>
+                </div>
+                
+                <div class="profile-pic" id="header-profile-icon" onclick="switchNav(currentMode === 'customer' ? 'customer-profile' : 'partner-profile')">U</div>
+            </div>
+            <div class="location-bar" id="header-location" onclick="showLocationModal()">
+                <i class="fa-solid fa-location-crosshairs text-blue"></i>
+                <span id="loc-text-display" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85%; font-weight: 500;">Detecting location...</span>
+                <i class="fa-solid fa-chevron-down" style="margin-left: auto;"></i>
+            </div>
+        </header>
+
+        <!-- PHONE VERIFICATION BANNER -->
+        <div id="phone-verification-banner" class="hidden" style="background: var(--primary-light); color: var(--primary-dark); padding: 12px 16px; margin: 16px 20px 0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1.5px solid var(--primary); font-weight: 600; box-shadow: var(--shadow-sm);" onclick="openPhoneVerifyModal()">
+            <span><i class="fa-solid fa-mobile-screen-button" style="margin-right: 6px;"></i> Verify Your Phone Number</span>
+            <i class="fa-solid fa-chevron-right"></i>
+        </div>
+
+        <!-- ================= CUSTOMER PAGES ================= -->
+        <main id="view-customer-home" class="page hidden">
+            <h2 class="section-title">Explore Kitchens</h2>
+            <div class="food-grid" id="kitchens-container"></div>
+        </main>
+
+        <main id="view-kitchen-profile" class="page hidden" style="padding-top: 0;">
+            <div class="kitchen-banner-container">
+                <div class="back-btn-overlay" onclick="switchNav('customer-home')"><i class="fa-solid fa-arrow-left"></i></div>
+                <img id="kp-banner-img" src="" class="kitchen-banner" onerror="this.src='https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80'">
+            </div>
+            <div class="kitchen-profile-card">
+                <div class="kp-title"><span id="kp-name">Kitchen Name</span> <span id="kp-badge"></span></div>
+                <div class="kp-owner">By <span id="kp-owner-name">Owner</span></div>
+                <div class="kp-desc" id="kp-desc">Description</div>
+                <div class="kp-info-pills">
+                    <div class="kp-pill" id="kp-rating"><i class="fa-solid fa-star" style="color:#f59e0b"></i> 4.0 Rating</div>
+                    <div class="kp-pill" id="kp-delivery-info"><i class="fa-solid fa-moped text-blue"></i> Direct Delivery</div>
+                </div>
+            </div>
+            <h2 class="section-title">Full Menu</h2>
+            <div class="food-grid" id="kp-food-container"></div>
+        </main>
+
+        <main id="view-customer-orders" class="page hidden">
+            <h2 class="section-title">My Orders</h2>
+            <div id="orders-container"></div>
+        </main>
+
+        <main id="view-customer-profile" class="page hidden">
+            <div class="profile-header">
+                <div class="profile-avatar" id="profile-avatar">C</div>
+                <h2 id="profile-name" style="font-weight: 700;">Customer</h2>
+                <p id="profile-phone" style="font-size: 0.9rem; font-weight: 500; margin-top: 4px;"></p>
+            </div>
+            <div class="list-group">
+                <div class="list-item" onclick="showLocationModal()">
+                    <div><i class="fa-solid fa-map-location-dot list-icon"></i> Set Delivery Location</div>
+                    <i class="fa-solid fa-chevron-right list-arrow"></i>
+                </div>
+                <div class="list-item" onclick="switchNav('settings')">
+                    <div><i class="fa-solid fa-gear list-icon"></i> Settings & Policies</div>
+                    <i class="fa-solid fa-chevron-right list-arrow"></i>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= PARTNER PAGES ================= -->
+        <main id="view-partner-dashboard" class="page hidden">
+            <div id="partner-suspended-warning" class="hidden" style="background: var(--danger); color: white; padding: 14px; border-radius: 12px; margin-bottom: 16px; font-size: 0.9rem; font-weight: 600; text-align: center; box-shadow: var(--shadow-md);">
+                ⚠️ Account Suspended until <span id="suspend-date"></span> due to reports. Your kitchen is hidden.
+            </div>
+            <div class="flex-between" style="margin-bottom: 16px;">
+                <h2 class="section-title" style="margin:0;">Live Orders</h2>
+            </div>
+            <div id="partner-active-orders"></div>
+        </main>
+
+        <main id="view-partner-menu" class="page hidden">
+            <h2 class="section-title">Menu Management</h2>
+            <div class="form-card">
+                <h3 style="margin-bottom: 16px; font-size: 1.1rem;">Add New Dish</h3>
+                <div class="form-group"><label>Food Name</label><input type="text" id="p-food-name" placeholder="e.g., Aloo Paratha"></div>
+                <div class="form-group"><label>Description</label><textarea id="p-desc" rows="2" placeholder="Ingredients and details..."></textarea></div>
+                <div class="form-group"><label>Price (₹)</label><input type="number" id="p-price" placeholder="Price per plate"></div>
+                <div class="form-group">
+                    <label>Food Image</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn"><i class="fa-solid fa-camera"></i> Upload Image</div>
+                        <input type="file" accept="image/*" onchange="handleImageUpload(event, 'p-food-img-preview', 'foodImageBase64')">
+                    </div>
+                    <img id="p-food-img-preview" class="img-preview">
+                </div>
+                <button class="btn btn-primary" onclick="addFoodItem()">Publish to Menu</button>
+            </div>
+            <h3 style="margin-bottom: 16px; font-size: 1.1rem;">Your Published Menu</h3>
+            <div id="partner-menu-list"></div>
+        </main>
+
+        <main id="view-partner-profile" class="page hidden">
+            <div class="flex-between" style="margin-bottom: 20px;">
+                <h2 class="section-title" style="margin:0;">Kitchen Setup</h2>
+                <div id="partner-ver-badge" class="badge"></div>
+            </div>
+            <div class="form-card">
+                <div class="form-group">
+                    <label>Kitchen Banner Image</label>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-btn"><i class="fa-regular fa-image"></i> Choose Banner</div>
+                        <input type="file" accept="image/*" onchange="handleImageUpload(event, 'p-kit-img-preview', 'kitImageBase64')">
+                    </div>
+                    <img id="p-kit-img-preview" class="img-preview" style="height: 200px;">
+                </div>
+                <div class="form-group"><label>Kitchen Name</label><input type="text" id="p-kitchen-name"></div>
+                <div class="form-group"><label>Owner Name</label><input type="text" id="p-owner-name"></div>
+                <div class="form-group"><label>Kitchen Address</label><textarea id="p-location" rows="2"></textarea></div>
+                <div class="form-group"><label>Kitchen Description</label><textarea id="p-kitchen-desc" rows="3"></textarea></div>
+                <button class="btn btn-primary" onclick="updatePartnerProfile()">Save Details</button>
+            </div>
+            <div class="list-group" style="margin-top: 24px;">
+                <div class="list-item" onclick="switchNav('settings')">
+                    <div><i class="fa-solid fa-gear list-icon"></i> App Settings & Policies</div>
+                    <i class="fa-solid fa-chevron-right list-arrow"></i>
+                </div>
+            </div>
+        </main>
+
+        <!-- ================= SHARED SETTINGS ================= -->
+        <main id="view-settings" class="page hidden">
+            <div class="flex-between" style="margin-bottom: 20px;">
+                <h2 class="section-title" style="margin:0;">Settings</h2>
+                <button class="btn btn-outline" style="width:auto; padding: 6px 16px; border-radius: 50px;" onclick="switchNav(currentMode === 'customer' ? 'customer-profile' : 'partner-profile')">Back</button>
+            </div>
+            <div class="list-group" style="margin-bottom: 16px;">
+                <div class="list-item" onclick="document.getElementById('modal-about').classList.remove('hidden')">
+                    <div><i class="fa-solid fa-circle-info list-icon"></i> About Ghar ka Khana</div>
+                    <i class="fa-solid fa-chevron-right list-arrow"></i>
+                </div>
+                <div class="list-item" onclick="document.getElementById('modal-terms').classList.remove('hidden')">
+                    <div><i class="fa-solid fa-file-contract list-icon"></i> Terms & Conditions</div>
+                    <i class="fa-solid fa-chevron-right list-arrow"></i>
+                </div>
+                <div class="list-item" onclick="document.getElementById('modal-privacy').classList.remove('hidden')">
+                    <div><i class="fa-solid fa-shield-halved list-icon"></i> Privacy Policy</div>
+                    <i class="fa-solid fa-chevron-right list-arrow"></i>
+                </div>
+            </div>
+            <div class="list-group">
+                <div class="list-item" style="display: block; line-height: 1.5;">
+                    <strong>Ghar ka Khana</strong> is a mobile-first platform connecting people with local home chefs.
+                </div>
+                <div class="list-item" style="color: var(--danger); justify-content: center; font-weight: 700; font-size: 1.1rem;" onclick="logout()">
+                    <i class="fa-solid fa-power-off" style="margin-right: 8px;"></i> Sign Out
+                </div>
+            </div>
+        </main>
+
+        <div id="floating-cart" class="floating-cart hidden" onclick="showCartModal()">
+            <div>
+                <div style="font-weight: 700; font-size: 1.1rem;" id="fc-items">2 items</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;" id="fc-kitchen-name">From Kitchen</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.25rem;">
+                <span id="fc-total">₹0</span>
+                <i class="fa-solid fa-circle-chevron-right" style="font-size: 1.4rem;"></i>
+            </div>
+        </div>
+
+        <nav class="bottom-nav" id="bottom-nav"></nav>
+    </div>
+</div>
+
+<!-- MODALS -->
+<div id="modal-phone-verify" class="modal-overlay hidden">
+    <div class="modal-content" style="text-align: center;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Verify Phone Number</h2>
+        <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 0.95rem;">Required before continuing.</p>
+        
+        <div id="pv-request-section">
+            <div class="form-group" style="display: flex; gap: 8px; text-align: left;">
+                <select id="pv-country-code" style="width: 80px; padding: 14px;"><option value="+91">+91</option></select>
+                <input type="tel" id="pv-phone" placeholder="9876543210" style="flex: 1;">
+            </div>
+            <div id="recaptcha-container-pv" style="margin-bottom: 16px;"></div>
+            <button class="btn btn-primary" onclick="sendPVOTP()">Send OTP</button>
+            <button class="btn btn-outline" style="margin-top:12px;" onclick="cancelPV()">Cancel</button>
+        </div>
+
+        <div id="pv-otp-section" class="hidden">
+            <input type="number" id="pv-otp" placeholder="Enter 6-digit OTP" style="text-align:center; font-size:1.2rem; letter-spacing:4px; padding: 14px; border-radius: 12px; border: 2px solid var(--border); width:100%; margin-bottom:20px; font-weight:bold;">
+            <button class="btn btn-primary" onclick="verifyPVOTP()">Verify OTP</button>
+            <button class="btn btn-outline" style="margin-top:12px;" onclick="cancelPV()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-cart" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Checkout</h2>
+            <i class="fa-solid fa-xmark modal-close" onclick="closeModals()"></i>
+        </div>
+        <div id="cart-kitchen-badge" style="background: var(--primary-light); color: var(--primary-dark); padding: 12px; border-radius: 12px; font-size: 0.95rem; margin-bottom: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-fire-burner"></i> Ordering from: <span id="checkout-kitchen-name">...</span>
+        </div>
+        <div id="cart-items-container" style="max-height: 35vh; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;"></div>
+        <div style="border-top: 2px dashed var(--border); padding-top: 16px; margin-bottom: 24px;">
+            <div class="flex-between" style="color: var(--text-muted); margin-bottom: 10px; font-weight: 500;"><span>Item Total</span> <span id="cart-subtotal">₹0</span></div>
+            <div class="flex-between" style="color: var(--success); margin-bottom: 10px; font-weight: 600;"><span>Delivery</span> <span>Free</span></div>
+            <div class="flex-between" style="font-weight: 700; font-size: 1.3rem; margin-top: 16px; color: var(--text-main);"><span>To Pay</span> <span id="cart-final-total">₹0</span></div>
+        </div>
+        <div style="background: var(--bg-cream); border: 1.5px solid var(--border); padding: 16px; border-radius: 12px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px;">
+            <i class="fa-solid fa-money-bill-wave" style="color: var(--success); font-size: 1.8rem;"></i>
+            <div>
+                <div style="font-weight: 700; font-size: 1.05rem;">Cash on Delivery (COD)</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Pay when your food arrives</div>
+            </div>
+        </div>
+        <button id="btn-confirm-order" class="btn btn-primary" style="font-size: 1.1rem; padding: 16px;" onclick="placeOrder()">Confirm & Place Order</button>
+    </div>
+</div>
+
+<div id="modal-review" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content" style="text-align: center;">
+        <div class="modal-header">
+            <h2 style="margin: 0 auto;">Rate your Meal</h2>
+            <i class="fa-solid fa-xmark modal-close" style="position:absolute; right:24px;" onclick="closeModals()"></i>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">How was the food from this kitchen?</p>
+        <div class="star-rating" id="review-stars">
+            <i class="fa-solid fa-star active" onclick="setReviewStars(1)"></i>
+            <i class="fa-solid fa-star active" onclick="setReviewStars(2)"></i>
+            <i class="fa-solid fa-star active" onclick="setReviewStars(3)"></i>
+            <i class="fa-solid fa-star active" onclick="setReviewStars(4)"></i>
+            <i class="fa-solid fa-star active" onclick="setReviewStars(5)"></i>
+        </div>
+        <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+    </div>
+</div>
+
+<div id="modal-report" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Report an Issue</h2>
+            <i class="fa-solid fa-xmark modal-close" onclick="closeModals()"></i>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Describe the problem with your delivered order.</p>
+        <div class="form-group"><textarea id="report-text" rows="4" placeholder="Missing items, bad quality, etc..."></textarea></div>
+        <button class="btn btn-danger" onclick="submitReport()">Submit Report</button>
+    </div>
+</div>
+
+<div id="modal-location" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content" style="text-align: center;">
+        <div class="modal-header">
+            <h2 style="margin: 0 auto;">Delivery Location</h2>
+            <i class="fa-solid fa-xmark modal-close" style="position:absolute; right:24px;" onclick="closeModals()"></i>
+        </div>
+        
+        <!-- Status Text -->
+        <p id="loc-status-text" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; font-weight: 500;">Requesting your location...</p>
+        
+        <!-- Location Buttons and Search Box -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button id="btn-use-location" class="btn btn-outline" style="padding: 10px; font-size: 0.85rem; width: auto; white-space: nowrap;" onclick="requestGPSLocation()">
+                <i class="fa-solid fa-location-crosshairs"></i> Locate Me
+            </button>
+            <div style="display: flex; flex: 1; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--white);">
+                <input type="text" id="loc-search-input" placeholder="Search area..." style="border: none; padding: 10px; width: 100%; outline: none; font-size: 0.85rem; font-family: inherit;">
+                <button style="background: var(--primary); color: white; border: none; padding: 0 16px; cursor: pointer; font-size: 1rem;" onclick="searchAddress()"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+        </div>
+
+        <div id="map" style="height: 250px; width: 100%; border-radius: 12px; margin-bottom: 16px; border: 1.5px solid var(--border); z-index: 10;"></div>
+        
+        <div class="form-group" style="text-align: left;">
+            <textarea id="loc-address" rows="3" placeholder="House/Flat No, Area..."></textarea>
+        </div>
+        <button class="btn btn-primary" style="margin-bottom: 12px; padding: 14px;" onclick="saveLocation()">Save Address</button>
+    </div>
+</div>
+
+<div id="modal-about" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content" style="text-align: center;">
+        <div class="modal-header">
+            <h2 style="margin: 0 auto;">About Ghar ka Khana</h2>
+            <i class="fa-solid fa-xmark modal-close" style="position:absolute; right:24px;" onclick="closeModals()"></i>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <!-- Logo Placeholder -->
+            <div style="height: 80px; width: 80px; border-radius: 50%; background: var(--primary); color: white; font-size: 2.5rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; box-shadow: var(--shadow-md);">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+            <h2 style="font-size: 1.6rem; font-weight: 700; color: var(--text-main);">Ghar ka Khana</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 500;">Powered by Sakhiv</p>
+        </div>
+
+        <div class="policy-text" style="text-align: left; background: var(--bg-cream); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+            <p style="margin-bottom: 12px;">Founded by <strong>Sachin Khivarsara</strong>.</p>
+            <p style="margin-bottom: 12px;">There is a unique warmth and comfort that only comes from home-cooked meals. <em>Ghar ka Khana</em> is built to celebrate that magic. We believe the best flavors don't come from commercial kitchens, but from home chefs who cook with love, passion, and authentic recipes passed down through generations. Our goal is to bring that wholesome, nostalgic taste of home right to your doorstep.</p>
+            <p>Designed and meticulously developed by the dedicated team at <strong>Sakhiv</strong>.</p>
+        </div>
+        
+        <button class="btn btn-primary" onclick="closeModals()">Close</button>
+    </div>
+</div>
+
+<div id="modal-terms" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Terms & Conditions</h2>
+            <i class="fa-solid fa-xmark modal-close" onclick="closeModals()"></i>
+        </div>
+        
+        <div class="lang-toggle">
+            <button class="lang-btn active" onclick="switchLang('terms', 'en')" id="btn-terms-en">English</button>
+            <button class="lang-btn" onclick="switchLang('terms', 'hi')" id="btn-terms-hi">हिंदी</button>
+        </div>
+
+        <div class="policy-text" id="content-terms-en">
+            <div class="policy-section">
+                <h3>1. Service Overview</h3>
+                <p>Ghar ka Khana acts strictly as a technology platform connecting home chefs (Partners) with users (Customers). We do not cook, own, or handle the physical food items.</p>
+            </div>
+            <div class="policy-section">
+                <h3>2. Payments & Fees</h3>
+                <p>All transactions currently support Cash on Delivery (COD). Users agree to pay exactly the billed amount to the Kitchen Partner upon delivery.</p>
+            </div>
+            <div class="policy-section">
+                <h3>3. Quality & Liability</h3>
+                <p>The respective Kitchen Partner is 100% responsible for food quality, hygiene standards, ingredients, and timely preparation. Ghar ka Khana is not liable for health issues arising from consumed food.</p>
+            </div>
+            <div class="policy-section">
+                <h3>4. Account Suspension</h3>
+                <p>We reserve the right to suspend accounts (Customer or Partner) due to repeated cancellations, false reports, or violations of platform policies.</p>
+            </div>
+        </div>
+
+        <div class="policy-text hidden" id="content-terms-hi">
+            <div class="policy-section">
+                <h3>1. सेवा अवलोकन</h3>
+                <p>'घर का खाना' पूरी तरह से एक तकनीकी मंच के रूप में कार्य करता है जो होम शेफ (पार्टनर) को उपयोगकर्ताओं (ग्राहकों) से जोड़ता है। हम भोजन नहीं बनाते हैं और न ही भोजन के मालिक हैं।</p>
+            </div>
+            <div class="policy-section">
+                <h3>2. भुगतान और शुल्क</h3>
+                <p>वर्तमान में सभी लेनदेन 'कैश ऑन डिलीवरी' (COD) का समर्थन करते हैं। उपयोगकर्ता डिलीवरी पर किचन पार्टनर को सटीक बिल राशि का भुगतान करने के लिए सहमत हैं।</p>
+            </div>
+            <div class="policy-section">
+                <h3>3. गुणवत्ता और उत्तरदायित्व</h3>
+                <p>संबंधित किचन पार्टनर भोजन की गुणवत्ता, स्वच्छता मानकों, सामग्री और समय पर तैयारी के लिए 100% जिम्मेदार है। सेवन किए गए भोजन से होने वाली स्वास्थ्य समस्याओं के लिए 'घर का खाना' उत्तरदायी नहीं है।</p>
+            </div>
+            <div class="policy-section">
+                <h3>4. खाता निलंबन</h3>
+                <p>लगातार रद्दीकरण, झूठी रिपोर्ट या प्लेटफ़ॉर्म नीतियों के उल्लंघन के कारण हम खातों (ग्राहक या पार्टनर) को निलंबित करने का अधिकार सुरक्षित रखते हैं।</p>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="closeModals()">I Understand</button>
+    </div>
+</div>
+
+<div id="modal-privacy" class="modal-overlay hidden" onclick="handleModalClick(event)">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Privacy Policy</h2>
+            <i class="fa-solid fa-xmark modal-close" onclick="closeModals()"></i>
+        </div>
+
+        <div class="lang-toggle">
+            <button class="lang-btn active" onclick="switchLang('privacy', 'en')" id="btn-privacy-en">English</button>
+            <button class="lang-btn" onclick="switchLang('privacy', 'hi')" id="btn-privacy-hi">हिंदी</button>
+        </div>
+
+        <div class="policy-text" id="content-privacy-en">
+            <div class="policy-section">
+                <h3>1. Information Collection</h3>
+                <p>We collect your name, email, phone number, and precise GPS location to facilitate accurate food delivery and account creation.</p>
+            </div>
+            <div class="policy-section">
+                <h3>2. Data Usage</h3>
+                <p>Your data is used exclusively to process orders, verify your identity via OTP, and manage your account seamlessly.</p>
+            </div>
+            <div class="policy-section">
+                <h3>3. Data Sharing</h3>
+                <p>Your name, phone number, and exact address are shared <b>only</b> with the Kitchen Partner fulfilling your specific order. We do not sell your data to third parties.</p>
+            </div>
+            <div class="policy-section">
+                <h3>4. Data Security</h3>
+                <p>We use industry-standard Firebase authentication and database rules to keep your personal information completely secure.</p>
+            </div>
+        </div>
+
+        <div class="policy-text hidden" id="content-privacy-hi">
+            <div class="policy-section">
+                <h3>1. जानकारी संग्रह</h3>
+                <p>सटीक भोजन वितरण और खाता बनाने की सुविधा के लिए हम आपका नाम, ईमेल, फोन नंबर और सटीक जीपीएस स्थान (लोकेशन) एकत्र करते हैं।</p>
+            </div>
+            <div class="policy-section">
+                <h3>2. डेटा का उपयोग</h3>
+                <p>आपके डेटा का उपयोग विशेष रूप से ऑर्डर संसाधित करने, ओटीपी के माध्यम से आपकी पहचान सत्यापित करने और आपके खाते को प्रबंधित करने के लिए किया जाता है।</p>
+            </div>
+            <div class="policy-section">
+                <h3>3. डेटा साझाकरण</h3>
+                <p>आपका नाम, फोन नंबर और सटीक पता <b>केवल</b> उस किचन पार्टनर के साथ साझा किया जाता है जो आपका विशेष ऑर्डर तैयार कर रहा है। हम आपका डेटा तीसरे पक्ष को नहीं बेचते हैं।</p>
+            </div>
+            <div class="policy-section">
+                <h3>4. डेटा सुरक्षा</h3>
+                <p>आपकी व्यक्तिगत जानकारी को पूरी तरह सुरक्षित रखने के लिए हम उद्योग-मानक फायरबेस प्रमाणीकरण (Firebase) और डेटाबेस सुरक्षा नियमों का उपयोग करते हैं।</p>
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="closeModals()">Close</button>
+    </div>
+</div>
+
+<!-- ================= FIREBASE & APP LOGIC ================= -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, RecaptchaVerifier, linkWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, query, where, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbMoTw7DzMJKVIVmAAdmmkcbOkps9Th3I",
+      authDomain: "ghar-ka-khana01.firebaseapp.com",
+      projectId: "ghar-ka-khana01",
+      storageBucket: "ghar-ka-khana01.firebasestorage.app",
+      messagingSenderId: "614620080982",
+      appId: "1:614620080982:web:dfb34aae67ff561b8704f7",
+      measurementId: "G-GCGQDGDMRL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Global Safe Timeout Helper
+    const withTimeout = (promise, ms = 15000) => {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error("TIMEOUT")), ms);
+            promise
+                .then(res => { clearTimeout(timer); resolve(res); })
+                .catch(err => { clearTimeout(timer); reject(err); });
+        });
+    };
+
+    let currentUser = null; let userData = null; let currentMode = null; 
+    let cart = { kitchenId: null, kitchenName: null, items: {} };
+    let authState = 'login'; let pendingReviewOrder = null; let pendingReportOrder = null;
+    let currentReviewStars = 5; let tempImages = { foodImageBase64: "", kitImageBase64: "" };
+    
+    let currentKitchens = []; let currentMenu = [];
+    let activeOrdersCustomer = []; let activeOrdersPartner = [];
+    let unsubCustomerOrders = null; let unsubPartnerOrders = null; let unsubMenu = null;
+    let globalTimerInterval = null;
+    let pvPendingAction = null; 
+
+    let map = null; let marker = null;
+
+    window.switchLang = (modalType, lang) => {
+        document.getElementById(`btn-${modalType}-en`).classList.toggle('active', lang === 'en');
+        document.getElementById(`btn-${modalType}-hi`).classList.toggle('active', lang === 'hi');
+        document.getElementById(`content-${modalType}-en`).classList.toggle('hidden', lang !== 'en');
+        document.getElementById(`content-${modalType}-hi`).classList.toggle('hidden', lang !== 'hi');
+    };
+
+    window.setAuthMode = (mode) => {
+        authState = mode; 
+        const isReg = mode === 'register';
+        
+        document.getElementById('register-fields').classList.toggle('hidden', !isReg);
+        document.getElementById('forgot-password-link').classList.toggle('hidden', isReg);
+        document.getElementById('btn-auth-action').innerText = isReg ? "Create Account" : "Log In";
+        document.getElementById('auth-error').classList.add('hidden'); 
+        
+        const toggleContainer = document.getElementById('auth-toggle-container');
+        if(isReg) {
+            toggleContainer.innerHTML = `Already have an account? <span onclick="setAuthMode('login')" style="color: var(--primary); font-weight: 700; cursor: pointer;">Log In</span>`;
+        } else {
+            toggleContainer.innerHTML = `Don't have an account? <span onclick="setAuthMode('register')" style="color: var(--primary); font-weight: 700; cursor: pointer;">Create Account</span>`;
+        }
+    };
+
+    window.toggleRoleFields = () => {
+        const isPartner = document.getElementById('auth-role').value === 'partner';
+        document.getElementById('lbl-auth-name').innerText = isPartner ? "Owner Name" : "Full Name";
+        document.getElementById('fg-kitchen-name').classList.toggle('hidden', !isPartner);
+    };
+
+    window.triggerPasswordReset = async () => {
+        const email = document.getElementById('auth-email').value.trim();
+        const errorDiv = document.getElementById('auth-error');
+        
+        if(!email) {
+            errorDiv.innerText = "Please enter your email address above to reset your password.";
+            errorDiv.style.color = "var(--danger)";
+            errorDiv.style.background = "#fef2f2";
+            errorDiv.style.borderColor = "#fca5a5";
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            await sendPasswordResetEmail(auth, email);
+            errorDiv.innerText = "Password reset link has been sent to your email.";
+            errorDiv.style.color = "var(--success)";
+            errorDiv.style.background = "#f0fdf4";
+            errorDiv.style.borderColor = "#bbf7d0";
+            errorDiv.classList.remove('hidden');
+        } catch(e) {
+            let msg = "Failed to send reset link.";
+            if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential') msg = "No account found with this email.";
+            else if(e.code === 'auth/invalid-email') msg = "Please enter a valid email address.";
+            else if(e.code === 'auth/too-many-requests') msg = "Too many attempts. Please try again later.";
+            
+            errorDiv.innerText = msg;
+            errorDiv.style.color = "var(--danger)";
+            errorDiv.style.background = "#fef2f2";
+            errorDiv.style.borderColor = "#fca5a5";
+            errorDiv.classList.remove('hidden');
+        }
+    };
+
+    window.executeAuth = async () => {
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const btn = document.getElementById('btn-auth-action');
+        const errorDiv = document.getElementById('auth-error');
+
+        const showError = (msg) => {
+            errorDiv.innerText = msg;
+            errorDiv.style.color = "var(--danger)";
+            errorDiv.style.background = "#fef2f2";
+            errorDiv.style.borderColor = "#fca5a5";
+            errorDiv.classList.remove('hidden');
+            
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.innerText = authState === 'register' ? "Create Account" : "Log In";
+        };
+
+        errorDiv.classList.add('hidden');
+
+        if(!email || !password) return showError("Please enter email and password.");
+
+        btn.disabled = true;
+        btn.style.opacity = "0.7";
+        btn.innerText = authState === 'register' ? "Creating Account..." : "Signing In...";
+
+        if(authState === 'register') {
+            const role = document.getElementById('auth-role').value;
+            const name = document.getElementById('auth-name').value.trim();
+            const address = document.getElementById('auth-reg-address').value.trim();
+            
+            if(!name || !address) return showError("Full Name and Address are required.");
+            if(role === 'partner' && !document.getElementById('auth-kitchen-name').value.trim()) return showError("Kitchen Name is required.");
+
+            try {
+                const cred = await withTimeout(createUserWithEmailAndPassword(auth, email, password));
+                const user = cred.user;
+
+                const dbPromise = role === 'customer'
+                    ? setDoc(doc(db, 'users', user.uid), {
+                        uid: user.uid, role: 'customer', email: email, name: name,
+                        address: address, phoneVerified: false, phone: null, createdAt: Date.now()
+                    })
+                    : setDoc(doc(db, 'partners', user.uid), {
+                        uid: user.uid, role: 'partner', email: email, ownerName: name,
+                        kitchenName: document.getElementById('auth-kitchen-name').value.trim(),
+                        address: address, phoneVerified: false, phone: null,
+                        description: "Authentic home-cooked meals.", rating: 4.0, verified: false,
+                        kitchenImage: "", reportCount: 0, suspendedUntil: null, createdAt: Date.now()
+                    });
+
+                await withTimeout(dbPromise);
+            } catch(e) { 
+                console.error("Signup Error:", e); 
+                if(e.message === "TIMEOUT") return showError("Connection timeout. Please check your internet or Firebase configuration.");
+                
+                let msg = "An error occurred. Please try again.";
+                if(e.code === 'auth/email-already-in-use') msg = "This email is already registered. Please log in.";
+                else if(e.code === 'auth/invalid-email') msg = "Please enter a valid email address.";
+                else if(e.code === 'auth/weak-password') msg = "Password must be at least 6 characters.";
+                else if(e.code === 'auth/network-request-failed') msg = "Network error. Please check your internet connection.";
+                showError(msg); 
+            }
+        } else {
+            try { 
+                await withTimeout(signInWithEmailAndPassword(auth, email, password));
+            } catch(e) { 
+                console.error("Login Error:", e); 
+                if(e.message === "TIMEOUT") return showError("Connection timeout. Please check your internet.");
+
+                let msg = "Login failed. Please check your credentials.";
+                if(e.code === 'auth/wrong-password') msg = "Incorrect password. Please try again.";
+                else if(e.code === 'auth/user-not-found') msg = "No account found with this email.";
+                else if(e.code === 'auth/invalid-credential') msg = "Incorrect password or no account found. Please try again.";
+                else if(e.code === 'auth/invalid-email') msg = "Please enter a valid email address.";
+                else if(e.code === 'auth/too-many-requests') msg = "Too many attempts. Please try again later.";
+                else if(e.code === 'auth/network-request-failed') msg = "Network error. Please check your internet connection.";
+                showError(msg); 
+            }
+        }
+    };
+
+    async function fetchUserProfile(uid) {
+        for (let i = 0; i < 6; i++) { 
+            try {
+                let snap = await getDoc(doc(db, 'users', uid));
+                if (snap.exists()) return { data: snap.data(), mode: 'customer' };
+                snap = await getDoc(doc(db, 'partners', uid));
+                if (snap.exists()) return { data: snap.data(), mode: 'partner' };
+            } catch(e) {
+                console.warn("Fetch profile retry:", e);
+            }
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        return null;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+        if(user) {
+            try {
+                currentUser = user;
+                const profile = await fetchUserProfile(user.uid);
+                
+                if(!profile) { 
+                    alert("Profile setup incomplete. Please contact support or try again."); 
+                    signOut(auth); 
+                    return; 
+                }
+
+                userData = profile.data; 
+                currentMode = profile.mode;
+
+                document.getElementById('view-auth').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('header-profile-icon').innerText = (userData.name || userData.ownerName || 'U').charAt(0).toUpperCase();
+                document.getElementById('header-location').style.display = (currentMode === 'customer') ? 'flex' : 'none';
+                
+                renderBottomNav();
+
+                if (!userData.phoneVerified) {
+                    document.getElementById('phone-verification-banner').classList.remove('hidden');
+                } else {
+                    document.getElementById('phone-verification-banner').classList.add('hidden');
+                }
+
+                if (currentMode === 'customer') {
+                    document.getElementById('loc-text-display').innerText = userData.address || "Set Delivery Location";
+                    switchNav('customer-home'); 
+                    await loadKitchens(); 
+                    listenCustomerOrders();
+                    if(!globalTimerInterval) globalTimerInterval = setInterval(window.updateOrderTimers, 1000);
+                } else {
+                    switchNav('partner-dashboard'); 
+                    listenPartnerOrders(); 
+                    listenPartnerMenu();
+                }
+            } catch(err) {
+                console.error("Auth State Setup Error:", err);
+                signOut(auth);
+            }
+        } else {
+            currentUser = null; userData = null; currentMode = null;
+            if(globalTimerInterval) { clearInterval(globalTimerInterval); globalTimerInterval = null; }
+            if(unsubCustomerOrders) unsubCustomerOrders(); if(unsubPartnerOrders) unsubPartnerOrders(); if(unsubMenu) unsubMenu();
+            
+            document.getElementById('view-auth').classList.remove('hidden'); 
+            document.getElementById('main-app').classList.add('hidden');
+            document.querySelectorAll('input, textarea').forEach(i => i.value = ''); 
+            document.getElementById('modal-phone-verify').classList.add('hidden');
+            document.getElementById('phone-verification-banner').classList.add('hidden');
+            
+            const btn = document.getElementById('btn-auth-action');
+            if(btn) {
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.innerText = authState === 'register' ? "Create Account" : "Log In";
+            }
+        }
+    });
+
+    window.logout = () => signOut(auth);
+
+    window.openPhoneVerifyModal = () => {
+        pvPendingAction = 'banner';
+        document.getElementById('modal-phone-verify').classList.remove('hidden');
+    }
+
+    window.sendPVOTP = async () => {
+        const phone = document.getElementById('pv-country-code').value + document.getElementById('pv-phone').value.trim();
+        if(document.getElementById('pv-phone').value.trim() === "") return alert("Enter phone number");
+        
+        if(!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container-pv', { size: 'invisible' });
+        }
+        try {
+            window.pvConfirmationResult = await linkWithPhoneNumber(auth.currentUser, phone, window.recaptchaVerifier);
+            document.getElementById('pv-request-section').classList.add('hidden');
+            document.getElementById('pv-otp-section').classList.remove('hidden');
+        } catch(e) {
+            console.error(e);
+            alert(e.message || "Failed to send OTP.");
+            if(window.recaptchaVerifier) { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; }
+        }
+    }
+
+    window.verifyPVOTP = async () => {
+        const otp = document.getElementById('pv-otp').value.trim();
+        if(!otp) return alert("Enter the OTP.");
+        try {
+            await window.pvConfirmationResult.confirm(otp);
+            const fullPhone = document.getElementById('pv-country-code').value + document.getElementById('pv-phone').value.trim();
+            await updateDoc(doc(db, currentMode === 'customer' ? 'users' : 'partners', currentUser.uid), { phoneVerified: true, phone: fullPhone });
+            
+            userData.phoneVerified = true; userData.phone = fullPhone;
+            document.getElementById('modal-phone-verify').classList.add('hidden');
+            document.getElementById('phone-verification-banner').classList.add('hidden'); 
+            alert("Phone verified successfully!");
+            
+            if(pvPendingAction === 'checkout') { window.placeOrder(); }
+        } catch(e) { alert("Invalid OTP"); }
+    }
+
+    window.cancelPV = () => {
+        document.getElementById('modal-phone-verify').classList.add('hidden');
+        document.getElementById('pv-request-section').classList.remove('hidden');
+        document.getElementById('pv-otp-section').classList.add('hidden');
+        document.getElementById('pv-phone').value = "";
+    }
+
+    window.switchNav = (viewId) => {
+        document.querySelectorAll('main.page').forEach(el => el.classList.add('hidden'));
+        
+        const targetView = document.getElementById(`view-${viewId}`);
+        if(targetView) targetView.classList.remove('hidden');
+        
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const navItem = document.getElementById(`nav-${viewId}`); if(navItem) navItem.classList.add('active');
+        document.getElementById('header-location').style.display = (viewId === 'customer-home' || viewId === 'customer-profile') ? 'flex' : 'none';
+
+        if(viewId === 'customer-profile' && userData) {
+            document.getElementById('profile-name').innerText = userData.name || "Customer";
+            document.getElementById('profile-phone').innerText = userData.phone || "No phone added";
+            document.getElementById('profile-avatar').innerText = (userData.name || 'C').charAt(0).toUpperCase();
+        }
+        if(viewId === 'partner-profile' && userData) {
+            document.getElementById('p-kitchen-name').value = userData.kitchenName || "";
+            document.getElementById('p-owner-name').value = userData.ownerName || "";
+            document.getElementById('p-location').value = userData.address || "";
+            document.getElementById('p-kitchen-desc').value = userData.description || "";
+            if(userData.kitchenImage) { const prev = document.getElementById('p-kit-img-preview'); prev.src = userData.kitchenImage; prev.style.display = 'block'; }
+            const badge = document.getElementById('partner-ver-badge');
+            if(userData.rating !== undefined && userData.rating >= 3.5) { badge.className = 'badge Delivered'; badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Verified (★ ' + (userData.rating).toFixed(1) + ')'; } 
+            else { badge.className = 'badge Pending'; badge.innerText = 'Unverified (★ ' + (userData.rating || 4.0).toFixed(1) + ')'; }
+        }
+        window.scrollTo(0, 0);
+    };
+
+    function renderBottomNav() {
+        const nav = document.getElementById('bottom-nav');
+        if (currentMode === 'customer') nav.innerHTML = `<div class="nav-item active" id="nav-customer-home" onclick="switchNav('customer-home')"><i class="fa-solid fa-house"></i><span>Home</span></div><div class="nav-item" id="nav-customer-orders" onclick="switchNav('customer-orders')"><i class="fa-solid fa-receipt"></i><span>Orders</span></div><div class="nav-item" id="nav-customer-profile" onclick="switchNav('customer-profile')"><i class="fa-regular fa-user"></i><span>Profile</span></div>`;
+        else nav.innerHTML = `<div class="nav-item active" id="nav-partner-dashboard" onclick="switchNav('partner-dashboard')"><i class="fa-solid fa-chart-pie"></i><span>Orders</span></div><div class="nav-item" id="nav-partner-menu" onclick="switchNav('partner-menu')"><i class="fa-solid fa-plus"></i><span>Menu</span></div><div class="nav-item" id="nav-partner-profile" onclick="switchNav('partner-profile')"><i class="fa-solid fa-store"></i><span>Kitchen</span></div>`;
+    }
+
+    window.handleImageUpload = (event, previewId, storageKey) => {
+        const file = event.target.files[0]; if(!file) return;
+        if(file.size > 1048576) { alert("Image is too large. Please upload an image under 1MB."); return; }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => { tempImages[storageKey] = e.target.result; const prev = document.getElementById(previewId); prev.src = e.target.result; prev.style.display = 'block'; };
+        reader.readAsDataURL(file);
+    };
+
+    window.loadKitchens = async () => {
+        const container = document.getElementById('kitchens-container');
+        try {
+            const querySnapshot = await getDocs(collection(db, 'partners'));
+            currentKitchens = [];
+            querySnapshot.forEach((doc) => {
+                const k = doc.data();
+                if(!k.suspendedUntil || k.suspendedUntil < Date.now()) currentKitchens.push(k);
+            });
+            
+            if (currentKitchens.length === 0) { container.innerHTML = `<div class="loading">No kitchens available right now.</div>`; return; }
+
+            container.innerHTML = currentKitchens.map(k => {
+                const rating = k.rating || 4.0;
+                const blueTick = rating >= 3.5 ? '<i class="fa-solid fa-circle-check text-blue" title="Verified"></i>' : '';
+                return `
+                <div class="food-card" onclick="openKitchenProfile('${k.uid}')" style="cursor: pointer;">
+                    <img src="${k.kitchenImage || 'https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80'}" class="food-img">
+                    <div class="food-content">
+                        <div class="flex-between" style="margin-bottom: 8px;">
+                            <div class="food-title">${k.kitchenName || 'Kitchen'} ${blueTick}</div>
+                            <div style="background: var(--success); color: white; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;"><i class="fa-solid fa-star" style="font-size:0.75rem;"></i> ${rating.toFixed(1)}</div>
+                        </div>
+                        <div class="food-desc">${k.description || 'Authentic home-cooked meals.'}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = `<div class="loading">Failed to load kitchens. Please try again.</div>`;
+        }
+    };
+
+    window.openKitchenProfile = async (kitId) => {
+        const kit = currentKitchens.find(k => k.uid === kitId); if(!kit) return;
+        const rating = kit.rating || 4.0;
+        document.getElementById('kp-banner-img').src = kit.kitchenImage || 'https://images.unsplash.com/photo-1556910103-1c02745a872f?auto=format&fit=crop&w=800&q=80';
+        document.getElementById('kp-name').innerText = kit.kitchenName;
+        document.getElementById('kp-owner-name').innerText = kit.ownerName;
+        document.getElementById('kp-desc').innerText = kit.description;
+        document.getElementById('kp-rating').innerHTML = `<i class="fa-solid fa-star" style="color:#f59e0b"></i> ${rating.toFixed(1)} Rating`;
+        document.getElementById('kp-badge').innerHTML = rating >= 3.5 ? '<i class="fa-solid fa-circle-check text-blue"></i>' : '';
+
+        try {
+            const q = query(collection(db, 'foods'), where('partnerId', '==', kitId));
+            const querySnapshot = await getDocs(q);
+            currentMenu = []; querySnapshot.forEach(d => currentMenu.push(d.data()));
+            switchNav('kitchen-profile'); renderMenuCards(currentMenu);
+        } catch(e) {
+            console.error(e);
+            alert("Failed to load menu.");
+        }
+    };
+
+    function renderMenuCards(menuArr) {
+        const container = document.getElementById('kp-food-container');
+        if (menuArr.length === 0) { container.innerHTML = `<div class="loading">Menu is empty.</div>`; return; }
+
+        container.innerHTML = menuArr.map(item => {
+            const qty = cart.items[item.foodId] ? cart.items[item.foodId].qty : 0;
+            const btnHtml = qty === 0 
+                ? `<button class="btn btn-outline" style="padding: 8px 20px; width: auto; font-size: 0.95rem;" onclick="addToCart('${item.foodId}')">Add</button>`
+                : `<div class="qty-control"><button class="qty-btn" onclick="updateQty('${item.foodId}', -1)">-</button><span class="qty-val">${qty}</span><button class="qty-btn" onclick="updateQty('${item.foodId}', 1)">+</button></div>`;
+
+            return `<div class="food-card"><img src="${item.image}" class="food-img" style="height: 160px;" onerror="this.src='https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=500&q=80'"><div class="food-content" style="padding: 16px;"><div class="food-title">${item.name}</div><div class="food-desc">${item.description}</div><div class="flex-between" style="align-items: center; margin-top: 12px;"><div class="food-price">₹${item.price}</div>${btnHtml}</div></div></div>`;
+        }).join('');
+        updateFloatingCart();
+    }
+
+    window.addToCart = (foodId) => {
+        const item = currentMenu.find(i => i.foodId === foodId);
+        
+        if(cart.kitchenId && cart.kitchenId !== item.partnerId) {
+            alert("You can only order from one kitchen at a time. Please clear your cart or finish your current order first.");
+            return;
+        }
+
+        if(!cart.kitchenId) { 
+            cart.kitchenId = item.partnerId; 
+            cart.kitchenName = currentKitchens.find(k => k.uid === item.partnerId).kitchenName; 
+        }
+        
+        cart.items[foodId] = { qty: 1, price: item.price, name: item.name, image: item.image, foodId: item.foodId }; 
+        renderMenuCards(currentMenu);
+    };
+
+    window.updateQty = (foodId, delta) => {
+        if(cart.items[foodId]) { 
+            cart.items[foodId].qty += delta; 
+            if(cart.items[foodId].qty <= 0) delete cart.items[foodId]; 
+        }
+        if(Object.keys(cart.items).length === 0) { cart.kitchenId = null; cart.kitchenName = null; }
+        renderMenuCards(currentMenu); 
+        if(!document.getElementById('modal-cart').classList.contains('hidden')) renderCartModal();
+    };
+
+    function updateFloatingCart() {
+        const fc = document.getElementById('floating-cart'); let totalQty = 0, totalPrice = 0;
+        Object.values(cart.items).forEach(i => { totalQty += i.qty; totalPrice += (i.price * i.qty); });
+        if (totalQty > 0 && currentMode === 'customer') {
+            fc.classList.remove('hidden'); document.getElementById('fc-items').innerText = `${totalQty} item${totalQty > 1 ? 's' : ''}`;
+            document.getElementById('fc-kitchen-name').innerText = `From ${cart.kitchenName}`; document.getElementById('fc-total').innerText = `₹${totalPrice}`; 
+        } else fc.classList.add('hidden');
+    }
+
+    window.showCartModal = () => { document.getElementById('modal-cart').classList.remove('hidden'); renderCartModal(); };
+
+    function renderCartModal() {
+        const container = document.getElementById('cart-items-container'); let subtotal = 0;
+        if(Object.keys(cart.items).length === 0) return window.closeModals();
+        document.getElementById('checkout-kitchen-name').innerText = cart.kitchenName;
+
+        container.innerHTML = Object.keys(cart.items).map(id => {
+            const item = cart.items[id]; subtotal += (item.price * item.qty);
+            return `<div class="flex-between" style="margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);"><div><div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 4px;">${item.name}</div><div style="font-size: 1rem; color: var(--primary); font-weight: 700;">₹${item.price}</div></div><div class="qty-control" style="background: var(--bg-cream); border: 1.5px solid var(--border);"><button class="qty-btn" onclick="updateQty('${id}', -1)">-</button><span class="qty-val">${item.qty}</span><button class="qty-btn" onclick="updateQty('${id}', 1)">+</button></div></div>`;
+        }).join('');
+        document.getElementById('cart-subtotal').innerText = `₹${subtotal}`; document.getElementById('cart-final-total').innerText = `₹${subtotal}`;
+    }
+
+    window.placeOrder = async () => {
+        if(!currentUser) return;
+        
+        if(!userData.phoneVerified) {
+            pvPendingAction = 'checkout';
+            document.getElementById('modal-cart').classList.add('hidden');
+            document.getElementById('modal-phone-verify').classList.remove('hidden');
+            return;
+        }
+
+        if(!userData.address || !userData.lat || !userData.lng) { 
+            window.closeModals(); 
+            return alert("Please set your exact delivery location in Profile first!"); 
+        }
+        
+        const btn = document.getElementById('btn-confirm-order');
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        let subtotal = 0; const foodsArr = Object.values(cart.items); foodsArr.forEach(i => subtotal += (i.price * i.qty));
+        
+        const newOrder = {
+            customerId: currentUser.uid, customerName: userData.name, 
+            customerAddress: userData.address, customerLat: userData.lat, customerLng: userData.lng,
+            partnerId: cart.kitchenId, kitchenName: cart.kitchenName, foods: foodsArr, 
+            total: subtotal, status: 'Pending', deliveryPin: Math.floor(1000 + Math.random() * 9000).toString(),
+            reviewed: false, reported: false, createdAt: Date.now()
+        };
+
+        try {
+            const docRef = await addDoc(collection(db, 'orders'), newOrder);
+            await updateDoc(docRef, { orderId: docRef.id });
+            cart = { kitchenId: null, kitchenName: null, items: {} }; 
+            window.closeModals(); renderMenuCards(currentMenu); 
+            alert("🎉 Order placed successfully!"); window.switchNav('customer-home');
+        } catch(e) { 
+            console.error(e); 
+            alert("Failed to place order."); 
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Confirm & Place Order";
+        }
+    };
+
+    function listenCustomerOrders() {
+        if(unsubCustomerOrders) unsubCustomerOrders();
+        const q = query(collection(db, 'orders'), where('customerId', '==', currentUser.uid));
+        unsubCustomerOrders = onSnapshot(q, (snapshot) => {
+            activeOrdersCustomer = [];
+            snapshot.forEach(doc => activeOrdersCustomer.push(doc.data()));
+            activeOrdersCustomer.sort((a,b) => b.createdAt - a.createdAt);
+            renderCustomerOrdersDOM();
+        });
+    }
+
+    function renderCustomerOrdersDOM() {
+        const container = document.getElementById('orders-container');
+        if(activeOrdersCustomer.length === 0) { container.innerHTML = `<div class="loading">No orders placed yet.</div>`; return; }
+
+        container.innerHTML = activeOrdersCustomer.map(o => {
+            let actionHtml = '';
+            if(o.status === 'Pending') {
+                actionHtml = `<div style="text-align: right;"><div style="font-size: 0.85rem; color: var(--danger); margin-bottom: 8px; font-weight: 500;">Confirming in <span id="timer-${o.orderId}" class="timer-text"></span></div><button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.9rem; border-color: var(--danger); color: var(--danger); width: auto;" onclick="cancelOrder('${o.orderId}')">Cancel</button></div>`;
+            } else if (o.status === 'Delivered') {
+                let btns = '';
+                if(!o.reviewed) btns += `<button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem; width: auto;" onclick="openReviewModal('${o.orderId}', '${o.partnerId}')"><i class="fa-solid fa-star"></i> Rate</button>`;
+                else btns += `<span style="font-size:0.85rem; color:var(--text-muted);"><i class="fa-solid fa-check"></i> Rated</span>`;
+                if(!o.reported) btns += `<button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.85rem; width: auto; border-color: var(--danger); color: var(--danger); margin-left: 8px;" onclick="openReportModal('${o.orderId}', '${o.partnerId}')"><i class="fa-solid fa-triangle-exclamation"></i> Report</button>`;
+                else btns += `<span style="font-size:0.85rem; color:var(--danger); margin-left: 8px;"><i class="fa-solid fa-check"></i> Reported</span>`;
+                actionHtml = `<div style="display:flex; align-items:center;">${btns}</div>`;
+            }
+
+            return `
+            <div class="order-card status-${o.status}">
+                <div class="flex-between" style="margin-bottom: 16px;"><div style="font-weight: 700; font-size: 1.1rem;">${o.kitchenName}</div><div style="color: var(--primary); font-weight: 700; font-size: 1.1rem;">₹${o.total}</div></div>
+                ${o.status !== 'Cancelled' && o.status !== 'Delivered' ? `<div style="background: var(--primary-light); color: var(--primary-dark); padding: 12px; border-radius: 12px; font-weight: 700; text-align: center; margin-bottom: 16px; font-size: 1.2rem; border: 1.5px dashed var(--primary);">Delivery PIN: <span style="letter-spacing: 2px;">${o.deliveryPin}</span></div>` : ''}
+                <div style="font-size: 0.95rem; margin-bottom: 16px; color: var(--text-main); line-height: 1.5;">${o.foods.map(i => `<span style="font-weight:600;">${i.qty}x</span> ${i.name}`).join('<br>')}</div>
+                <div class="flex-between" style="align-items: flex-end;"><div class="badge ${o.status}">${o.status}</div>${actionHtml}</div>
+            </div>`;
+        }).join('');
+    }
+
+    window.updateOrderTimers = async () => {
+        if (currentMode === 'customer' && !document.getElementById('view-customer-orders').classList.contains('hidden')) {
+            for (let o of activeOrdersCustomer) {
+                if(o.status === 'Pending') {
+                    const elapsed = Date.now() - o.createdAt; const remaining = 60000 - elapsed; 
+                    if(remaining <= 0) { 
+                        try { await updateDoc(doc(db, 'orders', o.orderId), {status: 'Accepted'}); } catch(e){} 
+                    } else { 
+                        const timerEl = document.getElementById(`timer-${o.orderId}`); 
+                        if(timerEl) timerEl.innerText = Math.ceil(remaining / 1000) + 's'; 
+                    }
+                }
+            }
+        }
+    }
+
+    window.cancelOrder = async (orderId) => { 
+        if(confirm("Cancel this order?")) {
+            try { await updateDoc(doc(db, 'orders', orderId), {status: 'Cancelled'}); }
+            catch(e) { alert("Failed to cancel order."); }
+        }
+    };
+
+    window.openReviewModal = (orderId, kitchenId) => { pendingReviewOrder = { orderId, kitchenId }; setReviewStars(5); document.getElementById('modal-review').classList.remove('hidden'); }
+    window.setReviewStars = (stars) => { currentReviewStars = stars; document.querySelectorAll('#review-stars i').forEach((icon, i) => icon.classList.toggle('active', i < stars)); }
+    
+    window.submitReview = async () => {
+        if(!pendingReviewOrder) return;
+        try {
+            await updateDoc(doc(db, 'orders', pendingReviewOrder.orderId), { reviewed: true });
+            const kitRef = doc(db, 'partners', pendingReviewOrder.kitchenId); const kitSnap = await getDoc(kitRef);
+            if(kitSnap.exists()) { const newRating = ((kitSnap.data().rating || 4.0) + currentReviewStars) / 2; await updateDoc(kitRef, { rating: newRating }); }
+            alert("Thank you for your review!"); window.closeModals();
+        } catch(e) { alert("Failed to submit review"); }
+    }
+
+    window.openReportModal = (orderId, kitchenId) => { pendingReportOrder = { orderId, kitchenId }; document.getElementById('report-text').value = ''; document.getElementById('modal-report').classList.remove('hidden'); };
+    window.submitReport = async () => {
+        const text = document.getElementById('report-text').value.trim(); if(!text) return alert("Please detail your issue.");
+        try {
+            await updateDoc(doc(db, 'orders', pendingReportOrder.orderId), { reported: true });
+            const kitRef = doc(db, 'partners', pendingReportOrder.kitchenId); const kitSnap = await getDoc(kitRef);
+            if(kitSnap.exists()) {
+                let rc = (kitSnap.data().reportCount || 0) + 1; let susp = kitSnap.data().suspendedUntil || null;
+                if(rc >= 10) { susp = Date.now() + (7 * 24 * 60 * 60 * 1000); rc = 0; }
+                await updateDoc(kitRef, { reportCount: rc, suspendedUntil: susp });
+            }
+            alert("Report submitted successfully."); window.closeModals();
+        } catch(e) { alert("Failed to submit report"); }
+    }
+
+    function listenPartnerOrders() {
+        if(unsubPartnerOrders) unsubPartnerOrders();
+        const q = query(collection(db, 'orders'), where('partnerId', '==', currentUser.uid));
+        unsubPartnerOrders = onSnapshot(q, (snapshot) => {
+            activeOrdersPartner = []; snapshot.forEach(doc => activeOrdersPartner.push(doc.data()));
+            activeOrdersPartner.sort((a,b) => b.createdAt - a.createdAt); renderPartnerOrdersDOM();
+        });
+    }
+
+    function renderPartnerOrdersDOM() {
+        const susWarning = document.getElementById('partner-suspended-warning');
+        if(userData.suspendedUntil && userData.suspendedUntil > Date.now()) {
+            document.getElementById('suspend-date').innerText = new Date(userData.suspendedUntil).toLocaleDateString(); susWarning.classList.remove('hidden');
+        } else { susWarning.classList.add('hidden'); }
+
+        const orders = activeOrdersPartner.filter(o => o.status !== 'Pending' && o.status !== 'Cancelled');
+        const container = document.getElementById('partner-active-orders');
+        if(orders.length === 0) { container.innerHTML = `<div class="loading">No active orders right now.</div>`; return; }
+
+        container.innerHTML = orders.map(o => {
+            let actions = '';
+            if(o.status === 'Accepted') actions = `<button class="btn btn-primary" style="padding: 10px; font-size: 0.95rem; background:#f59e0b;" onclick="updateOrderStatus('${o.orderId}', 'Preparing')">Start Preparing</button>`;
+            else if(o.status === 'Preparing') actions = `<button class="btn btn-primary" style="padding: 10px; font-size: 0.95rem; background:#3b82f6;" onclick="updateOrderStatus('${o.orderId}', 'OutForDelivery')">Out for Delivery</button>`;
+            else if(o.status === 'OutForDelivery') actions = `<button class="btn btn-primary" style="padding: 10px; font-size: 0.95rem; background:var(--success);" onclick="verifyDeliveryPin('${o.orderId}')">Verify PIN & Deliver</button>`;
+
+            let navBtn = '';
+            if(o.customerLat && o.customerLng) {
+                navBtn = `<a href="https://www.google.com/maps/dir/?api=1&destination=${o.customerLat},${o.customerLng}" target="_blank" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem; width: auto; margin-left: 8px; display:inline-flex;"><i class="fa-solid fa-location-arrow"></i> Navigate</a>`;
+            }
+
+            return `
+            <div class="order-card status-${o.status}">
+                <div class="flex-between" style="margin-bottom: 12px;"><div><strong style="color:var(--text-muted); font-size:0.85rem;">CUSTOMER</strong><br><span style="font-weight:700; font-size:1.1rem;">${o.customerName}</span></div><div style="color: var(--primary); font-weight: 700; font-size: 1.15rem;">₹${o.total}</div></div>
+                <div style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 12px; background:var(--bg-cream); padding:10px; border-radius:10px; border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                    <div><i class="fa-solid fa-location-dot text-blue" style="margin-right:6px;"></i> ${o.customerAddress}</div>
+                    ${navBtn}
+                </div>
+                <div style="font-size: 0.95rem; margin-bottom: 16px; line-height: 1.5;">${o.foods.map(i => `<span style="font-weight:700;">${i.qty}x</span> ${i.name}`).join('<br>')}</div>
+                <div class="flex-between" style="align-items: center;"><div class="badge ${o.status}">${o.status}</div></div>
+                ${actions ? `<div style="margin-top: 16px;">${actions}</div>` : ''}
+            </div>`;
+        }).join('');
+    }
+
+    window.updateOrderStatus = async (orderId, newStatus) => {
+        try { await updateDoc(doc(db, 'orders', orderId), { status: newStatus }); } catch(e) { alert("Failed to update status"); }
+    };
+
+    window.verifyDeliveryPin = async (orderId) => {
+        const order = activeOrdersPartner.find(o => o.orderId === orderId);
+        if(!order) return;
+        const pin = prompt("Enter the 4-digit Delivery PIN provided by the customer:");
+        if(pin === null) return; 
+        if(pin === order.deliveryPin) { 
+            try { await updateDoc(doc(db, 'orders', orderId), {status: 'Delivered'}); alert("✅ PIN Matched! Order Delivered."); } catch(e) { alert("Error saving delivery."); }
+        } else alert("❌ Incorrect PIN.");
+    };
+
+    function listenPartnerMenu() {
+        if(unsubMenu) unsubMenu();
+        const q = query(collection(db, 'foods'), where('partnerId', '==', currentUser.uid));
+        unsubMenu = onSnapshot(q, (snapshot) => {
+            let html = '';
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                html += `<div style="background:var(--white); padding:16px; border-radius:12px; margin-bottom:12px; border:1px solid var(--border); display:flex; align-items:center; gap:16px; box-shadow:var(--shadow-sm);"><img src="${d.image}" style="width: 60px; height: 60px; border-radius: 12px; object-fit: cover;" onerror="this.src='https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=500&q=80'"><div><div style="font-weight:700; font-size:1.05rem;">${d.name}</div><div style="color:var(--primary); font-weight:600;">₹${d.price}</div></div></div>`;
+            });
+            document.getElementById('partner-menu-list').innerHTML = html || "<div class='loading' style='padding:20px;'>No items in menu yet.</div>";
+        });
+    }
+
+    window.addFoodItem = async () => {
+        const name = document.getElementById('p-food-name').value.trim(); const desc = document.getElementById('p-desc').value.trim(); const price = parseInt(document.getElementById('p-price').value);
+        let img = tempImages.foodImageBase64 || "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=500&q=80";
+        if(!name || !desc || !price || isNaN(price)) return alert("Please fill Name, Description, and a valid Price.");
+        try {
+            const docRef = await addDoc(collection(db, 'foods'), { partnerId: currentUser.uid, name, description: desc, price, image: img, createdAt: Date.now() });
+            await updateDoc(docRef, { foodId: docRef.id });
+            document.getElementById('p-food-name').value = ''; document.getElementById('p-desc').value = ''; document.getElementById('p-price').value = ''; document.getElementById('p-food-img-preview').style.display = 'none'; tempImages.foodImageBase64 = ""; alert("Dish added!");
+        } catch(e) { alert("Error adding dish"); }
+    };
+
+    window.updatePartnerProfile = async () => {
+        const ownerName = document.getElementById('p-owner-name').value.trim(); const kitName = document.getElementById('p-kitchen-name').value.trim(); const address = document.getElementById('p-location').value.trim(); const desc = document.getElementById('p-kitchen-desc').value.trim();
+        if(!ownerName || !kitName || !address) return alert("Owner Name, Kitchen Name, and Address are required.");
+        const updates = { ownerName, kitchenName: kitName, address, description: desc };
+        if (tempImages.kitImageBase64) updates.kitchenImage = tempImages.kitImageBase64;
+        
+        try {
+            await updateDoc(doc(db, 'partners', currentUser.uid), updates);
+            userData = { ...userData, ...updates }; alert("Profile updated!"); window.switchNav('partner-profile'); 
+        } catch(e) { alert("Error updating profile"); }
+    };
+
+    window.requestGPSLocation = () => {
+        const statusText = document.getElementById('loc-status-text');
+        
+        if (!navigator.geolocation) {
+            statusText.innerText = "Geolocation services are not supported by this browser/device.";
+            statusText.style.color = "var(--danger)";
+            return;
+        }
+
+        statusText.innerText = "Requesting location permission...";
+        statusText.style.color = "var(--text-main)";
+        
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude; 
+                const lng = pos.coords.longitude;
+                if(map && marker) {
+                    map.setView([lat, lng], 17);
+                    marker.setLatLng([lat, lng]);
+                }
+                statusText.innerText = "Location found! Drag marker to adjust exact delivery point.";
+                statusText.style.color = "var(--success)";
+                await window.fetchAddressFromOSM(lat, lng);
+            },
+            (err) => {
+                console.warn(`GPS Error(${err.code}): ${err.message}`);
+                statusText.innerText = "Location access unavailable. Ensure GPS is ON or search manually.";
+                statusText.style.color = "var(--danger)";
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
+
+    window.searchAddress = async () => {
+        const query = document.getElementById('loc-search-input').value.trim();
+        if(!query) return;
+        
+        const statusText = document.getElementById('loc-status-text');
+        statusText.innerText = "Searching...";
+        statusText.style.color = "var(--text-main)";
+        
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if(data && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                if(map && marker) {
+                    map.setView([lat, lng], 17);
+                    marker.setLatLng([lat, lng]);
+                }
+                await window.fetchAddressFromOSM(lat, lng);
+                statusText.innerText = "Found it! Drag the marker to adjust exact point.";
+                statusText.style.color = "var(--success)";
+            } else {
+                statusText.innerText = "Address not found. Try a different search term.";
+                statusText.style.color = "var(--danger)";
+            }
+        } catch(e) { 
+            console.error("Search failed", e); 
+            statusText.innerText = "Search failed due to a network error.";
+            statusText.style.color = "var(--danger)";
+        }
+    };
+
+    window.showLocationModal = () => { 
+        if (typeof L === 'undefined') {
+            alert("Map services are currently unavailable. Please check your internet connection.");
+            return;
+        }
+
+        document.getElementById('modal-location').classList.remove('hidden'); 
+        document.getElementById('loc-address').value = userData.address || ""; 
+        document.getElementById('loc-status-text').innerText = "Drag the marker to your exact location.";
+        document.getElementById('loc-status-text').style.color = "var(--text-muted)";
+        document.getElementById('loc-search-input').value = "";
+        
+        setTimeout(() => {
+            if(!map) {
+                map = L.map('map').setView([20.5937, 78.9629], 5); 
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+                
+                let startPos = (userData.lat && userData.lng) ? [userData.lat, userData.lng] : [20.5937, 78.9629];
+                marker = L.marker(startPos, {draggable: true}).addTo(map);
+                
+                marker.on('dragend', async function(e) {
+                    const pos = marker.getLatLng();
+                    await window.fetchAddressFromOSM(pos.lat, pos.lng);
+                });
+
+                window.requestGPSLocation();
+            } else {
+                map.invalidateSize(); 
+                if(userData.lat && userData.lng) {
+                    map.setView([userData.lat, userData.lng], 17);
+                    marker.setLatLng([userData.lat, userData.lng]);
+                } else {
+                    window.requestGPSLocation();
+                }
+            }
+        }, 300);
+    };
+
+    window.fetchAddressFromOSM = async (lat, lng) => {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            if(data && data.display_name) document.getElementById('loc-address').value = data.display_name;
+        } catch(e) { console.error("Reverse Geocoding failed", e); }
+    }
+
+    window.saveLocation = async () => { 
+        const add = document.getElementById('loc-address').value.trim(); 
+        if(!add) return alert("Enter address."); 
+        
+        let pos = { lat: 20.5937, lng: 78.9629 };
+        if(marker) pos = marker.getLatLng();
+        
+        try {
+            await updateDoc(doc(db, currentMode === 'customer' ? 'users' : 'partners', currentUser.uid), { 
+                address: add, 
+                lat: pos.lat, 
+                lng: pos.lng 
+            });
+            
+            userData.address = add; 
+            userData.lat = pos.lat; 
+            userData.lng = pos.lng;
+            document.getElementById('loc-text-display').innerText = add; 
+            window.closeModals(); 
+        } catch(e) { alert("Failed to save location."); }
+    };
+
+    window.closeModals = () => { document.querySelectorAll('.modal-overlay').forEach(el => el.classList.add('hidden')); };
+    window.handleModalClick = (e) => { if(e.target.classList.contains('modal-overlay')) window.closeModals(); };
+</script>
+</body>
+</html>
